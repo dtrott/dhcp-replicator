@@ -13,12 +13,13 @@ import java.util.Properties;
 
 public class DhcpReplicator {
     private static final String CONFIG_FILE = "dhcp-replicator.properties";
+    private Thread watcherThread;
 
     public static void main(final String[] args) throws Exception {
         new DhcpReplicator().execute(args);
     }
 
-    private void execute(String[] args) {
+    public void execute(String[] args) {
 
         final Config config = buildConfig(args);
 
@@ -93,10 +94,22 @@ public class DhcpReplicator {
                 }
             };
 
-            // Execute one delta on startup.
-            callback.changed();
+            final Runnable watchRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    // Execute one delta on startup.
+                    callback.changed();
 
-            watcher.watch(callback);
+                    try {
+                        watcher.watch(callback);
+                    } catch (FileWatcherException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            watcherThread = new Thread(watchRunnable);
+            watcherThread.start();
         } catch (DnsServerException | FileWatcherException e) {
             e.printStackTrace();
         }
@@ -118,5 +131,9 @@ public class DhcpReplicator {
         } catch (LeaseParseException | DnsServerException e) {
             e.printStackTrace();
         }
+    }
+
+    public void shutdown() {
+        watcherThread.interrupt();
     }
 }
