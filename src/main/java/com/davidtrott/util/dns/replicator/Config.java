@@ -155,7 +155,9 @@ public class Config {
             dnsTtl = 60;
         }
 
-        dhcpRangeInfo = new SubnetUtils(dhcpRange).getInfo();
+        final SubnetUtils subnetUtils = new SubnetUtils(dhcpRange);
+        subnetUtils.setInclusiveHostCount(true);
+        dhcpRangeInfo = subnetUtils.getInfo();
 
         if (!new File(leaseFile).exists()) {
             valid = false;
